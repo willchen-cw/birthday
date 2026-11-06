@@ -99,7 +99,7 @@ export class RoomScene {
       stage: '花卷：“横幅有点歪，灯已经接好，礼炮还没有试过！”',
       ceremony: '奶盖清了清嗓子：“请今天的主角坐好——”',
       wish: '猫猫们都安静了。现在可以偷偷许一个愿望。',
-      finished: '芝麻、橘总、奶盖、花卷：生日快乐，今天你最大！',
+      finished: '芝麻、金币、奶盖、花卷：生日快乐，今天你最大！',
     }[task];
   }
 
@@ -147,7 +147,7 @@ export class RoomScene {
       dock.innerHTML = heading('MISSION 01 / WAKE UP', state.tasks.wake ? '主持人终于上线。' : '让这只猫，起床营业。', state.tasks.wake ? '它跳出纸箱，拿上话筒，已经奔向舞台。' : '道具可以拖过去。猫条要先撕开，再送到鼻子前。') + (state.tasks.wake ? `<div class="scene-success-note">${icon('check', 22)}<span>空纸箱已释放<br><small>主持人已去舞台就位</small></span></div>${finish(this.ui.waking ? '奶盖正在奔向舞台…' : '拉回全景，看看它', this.ui.waking)}` : `<div class="scene-tools wake-tools"><button class="scene-tool" data-drag="alarm" data-scene-action="wake-tool" data-value="alarm">${icon('clock', 31)}<strong>小闹钟</strong><small>拖到它旁边</small></button><button class="scene-tool" data-drag="script" data-scene-action="wake-tool" data-value="script">${icon('note', 31)}<strong>主持词</strong><small>请它发个言</small></button><button class="scene-tool snack-tool ${this.ui.snackOpen ? 'snack-open' : ''}" data-drag="snack" data-scene-action="snack" aria-label="${this.ui.snackOpen ? '选中打开的猫条' : '撕开猫条'}"><span class="snack-packet"><i></i>${icon('fish', 18)}</span><strong>${this.ui.snackOpen ? '猫条开好啦' : '撕开猫条'}</strong><small>${this.ui.snackOpen ? '拖到鼻子前' : '向右滑，也可轻点'}</small></button></div>${this.ui.snackOpen ? '<button class="button button-secondary scene-feed" data-scene-action="feed">' + icon('snack', 17) + ' 把猫条送过去</button>' : '<p class="scene-tool-tip">也可以先点道具，再点奶盖。</p>'}`);
     } else if (task === 'cake') {
       const total = state.decorations.length;
-      dock.innerHTML = heading('MISSION 02 / MAKE A CAKE', '这块蛋糕，随你摆。', '拖一份装饰到蛋糕上；也可以先选装饰，再点落点。') + `<div class="scene-tools decoration-tray">${Object.entries(decorationNames).map(([kind, label]) => `<button class="scene-tool ${this.ui.selected === kind ? 'selected' : ''}" data-drag="${kind}" data-scene-action="select-decoration" data-value="${kind}" aria-label="${label}" aria-pressed="${this.ui.selected === kind}" ${total >= 12 ? 'disabled' : ''}><svg viewBox="-30 -28 60 60" aria-hidden="true">${decoration(kind, 0, 0, 1.2)}</svg><strong>${label}</strong></button>`).join('')}</div><div class="scene-cake-status"><button class="text-button" data-scene-action="undo" ${total ? '' : 'disabled'}>${icon('replay', 14)} 撤回一份</button><span>${total} / 12 份${total < 3 ? ` · 再放 ${3 - total} 份` : ' · 寿星作品满分'}</span></div>${this.ui.stealing ? '<button class="scene-thief-alert" data-scene-action="catch">' + icon('paw', 18) + ' 橘总伸爪了！拍它的爪子</button>' : '<p class="scene-tool-tip">橘总的爪子会从桌边偷偷伸来，发现就拍回去！</p>'}${finish('蛋糕就长这样！', total < 3)}`;
+      dock.innerHTML = heading('MISSION 02 / MAKE A CAKE', '这块蛋糕，随你摆。', '拖一份装饰到蛋糕上；也可以先选装饰，再点落点。') + `<div class="scene-tools decoration-tray">${Object.entries(decorationNames).map(([kind, label]) => `<button class="scene-tool ${this.ui.selected === kind ? 'selected' : ''}" data-drag="${kind}" data-scene-action="select-decoration" data-value="${kind}" aria-label="${label}" aria-pressed="${this.ui.selected === kind}" ${total >= 12 ? 'disabled' : ''}><svg viewBox="-30 -28 60 60" aria-hidden="true">${decoration(kind, 0, 0, 1.2)}</svg><strong>${label}</strong></button>`).join('')}</div><div class="scene-cake-status"><button class="text-button" data-scene-action="undo" ${total ? '' : 'disabled'}>${icon('replay', 14)} 撤回一份</button><span>${total} / 12 份${total < 3 ? ` · 再放 ${3 - total} 份` : ' · 寿星作品满分'}</span></div>${this.ui.stealing ? '<button class="scene-thief-alert" data-scene-action="catch">' + icon('paw', 18) + ' 金币伸爪了！拍它的爪子</button>' : '<p class="scene-tool-tip">金币的爪子会从桌边偷偷伸来，发现就拍回去！</p>'}${finish('蛋糕就长这样！', total < 3)}`;
     } else if (task === 'stage') {
       dock.innerHTML = heading('MISSION 03 / DRESS THE STAGE', '亲手把庆典点亮。', '把横幅右端往上扶，再向下拉一下礼炮绳。') + `<div class="scene-stage-checks"><button data-scene-action="straighten" class="${state.stage.straight ? 'checked' : ''}">${icon(state.stage.straight ? 'check' : 'note', 15)} 横幅${state.stage.straight ? '已扶正' : '有点歪'}</button><button data-scene-action="test-cannon" class="${state.stage.tested ? 'checked' : ''}">${icon(state.stage.tested ? 'check' : 'party', 15)} ${state.stage.tested ? '礼炮已试放' : '试放礼炮'}</button></div><div class="scene-setting"><span>点亮灯光</span><div>${lights.map(([key, label, symbol]) => this.option('light', key, label, symbol)).join('')}</div></div><div class="scene-setting"><span>写上横幅</span><div>${['生日快乐', '今天你最大', '寿星请上座'].map((label) => this.option('banner', label, label)).join('')}</div></div><div class="scene-setting"><span>礼炮装什么</span><div>${cannons.map(([key, label, symbol]) => this.option('confetti', key, label, symbol)).join('')}</div></div>${finish('彩排完成，拉回全景', !state.stage.straight || !state.stage.tested)}`;
     } else if (task === 'ceremony') {
@@ -425,7 +425,7 @@ export class RoomScene {
     this.callbacks.save(); this.refresh(); this.renderControls(); this.callbacks.sound('tap');
     const newest = this.svg.querySelector(`[data-decoration-index="${this.state.decorations.length - 1}"]`);
     if (!reduced()) newest?.animate([{ opacity: .2, translate: '0 -12px' }, { opacity: 1, translate: '0 0' }], { duration: 300, easing: 'cubic-bezier(.2,.8,.3,1.4)' });
-    this.say(this.state.decorations.length === 3 ? '芝麻：“这就很好看了。还想加，也完全可以。”' : `啪嗒，一份${decorationNames[kind]}放好了。橘总似乎更想靠近了。`);
+    this.say(this.state.decorations.length === 3 ? '芝麻：“这就很好看了。还想加，也完全可以。”' : `啪嗒，一份${decorationNames[kind]}放好了。金币似乎更想靠近了。`);
   }
 
   async scheduleSteal() {
@@ -445,7 +445,7 @@ export class RoomScene {
     this.sequence++;
     this.ui.stealing = false; this.ui.caught = true;
     this.refresh(); this.renderControls(); this.callbacks.sound('meow');
-    this.say('啪！爪子缩回桌下，传来橘总的声音：“我在检查奶油厚度。”');
+    this.say('啪！爪子缩回桌下，传来金币的声音：“我在检查奶油厚度。”');
     if (await this.pause(900)) { this.ui.caught = false; this.refresh(); this.scheduleSteal(); }
   }
 
@@ -467,7 +467,7 @@ export class RoomScene {
     this.state.stage.tested = true; this.ui.pull = 0;
     this.callbacks.save(); this.refresh(); this.renderControls();
     this.callbacks.confetti(this.state.settings.confetti, 2400); this.callbacks.sound('success');
-    this.say(this.state.settings.confetti === 'fish' ? '砰！橘总立刻冲过来：“这个方案，我全力支持！”' : '砰！花卷往后一坐：“力道……比我想的大一点点。”');
+    this.say(this.state.settings.confetti === 'fish' ? '砰！金币立刻冲过来：“这个方案，我全力支持！”' : '砰！花卷往后一坐：“力道……比我想的大一点点。”');
     if (await this.pause(1100)) { this.ui.recoil = false; this.refresh(); if (this.cameraName === 'cannon') this.zoom('stage', 750); }
   }
 
@@ -509,7 +509,7 @@ export class RoomScene {
     if (!current()) return;
     await this.zoom('cake', 950);
     if (!current()) return;
-    this.say('花卷把蛋糕往前推了推。橘总：“我负责远距离欣赏。”');
+    this.say('花卷把蛋糕往前推了推。金币：“我负责远距离欣赏。”');
     this.svg.querySelector('[data-room-layer="cake"]')?.animate([{ translate: '28px 0', opacity: .6 }, { translate: '0 0', opacity: 1 }], { duration: reduced() ? 1 : 700 });
     await this.pause(1700);
     if (!current()) return;
