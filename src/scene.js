@@ -53,7 +53,7 @@ export class RoomScene {
     this.shell.setAttribute('role', 'dialog');
     this.shell.setAttribute('aria-modal', 'true');
     this.shell.setAttribute('aria-labelledby', 'scene-title');
-    this.shell.innerHTML = `<header class="scene-header"><button class="scene-back" data-scene-action="back">${icon('arrow', 18)}<span>房间全景</span></button><div><span class="scene-eyebrow">THE KITTY PARTY COMMITTEE</span><strong id="scene-title">${titles[task]}</strong></div><span class="scene-counter">${icon('paw', 15)}<span>${Object.values(this.state.tasks).filter(Boolean).length} / 3</span></span></header><div class="scene-workspace"><div class="scene-viewport"><div class="scene-location"><i></i><span></span></div><div class="scene-speech" role="status" aria-live="polite"></div><div class="scene-milestone" aria-live="polite"></div></div><aside class="scene-dock" aria-label="任务道具与操作"></aside></div><div class="scene-drag-ghost" aria-hidden="true"></div>`;
+    this.shell.innerHTML = `<header class="scene-header"><button class="scene-back" data-scene-action="back">${icon('arrow', 18)}<span>房间全景</span></button><div><span class="scene-eyebrow">THE KITTY PARTY COMMITTEE</span><strong id="scene-title">${titles[task]}</strong></div><div class="scene-header-actions">${this.callbacks.musicButton?.() || ''}<span class="scene-counter">${icon('paw', 15)}<span>${Object.values(this.state.tasks).filter(Boolean).length} / 3</span></span></div></header><div class="scene-workspace"><div class="scene-viewport"><div class="scene-location"><i></i><span></span></div><div class="scene-speech" role="status" aria-live="polite"></div><div class="scene-milestone" aria-live="polite"></div></div><aside class="scene-dock" aria-label="任务道具与操作"></aside></div><div class="scene-drag-ghost" aria-hidden="true"></div>`;
     document.body.append(this.shell);
     this.viewport = this.shell.querySelector('.scene-viewport');
     this.viewport.prepend(this.svg);
@@ -73,6 +73,7 @@ export class RoomScene {
     window.addEventListener('blur', () => this.cancelGesture(), options);
     this.refresh();
     this.renderControls();
+    this.callbacks.audioMood?.(task === 'wish' ? 'wish' : 'party');
     this.setCamera(this.fit(bounds.overview));
     if (!reduced() && sourceRect.bottom > 0 && sourceRect.top < innerHeight) {
       const destination = this.viewport.getBoundingClientRect();
@@ -524,6 +525,7 @@ export class RoomScene {
   toWish() {
     if (!this.active || this.closing) return;
     this.task = this.state.wished ? 'finished' : 'wish'; this.ui.task = this.task;
+    this.callbacks.audioMood?.(this.task === 'wish' ? 'wish' : 'party');
     this.message = this.initialMessage(this.task);
     this.refresh(); this.renderControls(); this.zoom(this.task === 'finished' ? 'overview' : 'wish', 900);
   }
@@ -536,6 +538,7 @@ export class RoomScene {
     this.shell.querySelector('[data-scene-action="wish"]').disabled = true;
     if (!await this.pause(1000)) return;
     this.task = 'finished'; this.ui.task = 'finished'; this.message = this.initialMessage('finished');
+    this.callbacks.audioMood?.('party');
     this.refresh(); this.renderControls(); this.zoom('overview', 1000);
     this.callbacks.confetti(this.state.settings.confetti, 4500);
   }

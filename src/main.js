@@ -1,6 +1,7 @@
 import './styles.css';
 import { icon, avatar, cat, cake, room, decoration, escapeText } from './art.js';
 import { RoomScene } from './scene.js';
+import { PartyAudio } from './audio.js';
 
 const STORAGE_KEY = 'kitty-birthday-v1';
 const freshState = () => ({
@@ -57,9 +58,6 @@ let boxClicks = 0;
 let cardUrl = null;
 let cardBlob = null;
 let cardBusy = false;
-let musicEnabled = false;
-let audioContext;
-let musicTimer;
 let confettiFrame;
 let previousFocus;
 
@@ -68,7 +66,35 @@ const dialogRoot = document.querySelector('#dialog-root');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const completedCount = () => Object.values(state.tasks).filter(Boolean).length;
 const saveState = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* Game also works without browser storage. */ } };
-const scene = new RoomScene({ state: () => state, save: saveState, sound: soundEffect, confetti: showConfetti, birthdaySong, close: render, card: () => openDialog('card') });
+const audio = new PartyAudio({ onChange: syncMusicButtons, onUnavailable: () => toast('音乐暂时没响起来，点一下右上角的音乐开关再试试。') });
+audio.setMood(state.celebrating && !state.wished ? 'wish' : 'party');
+const scene = new RoomScene({
+  state: () => state, save: saveState, sound: soundEffect, confetti: showConfetti, birthdaySong,
+  musicButton: () => musicButton('scene-sound-button'), audioMood: (mood) => audio.setMood(mood),
+  close: () => { audio.setMood(state.celebrating && !state.wished ? 'wish' : 'party'); render(); },
+  card: () => openDialog('card'),
+});
+
+function musicButtonContent() {
+  const playing = audio.status === 'playing';
+  const visual = playing ? '<span class="music-bars" aria-hidden="true"><i></i><i></i><i></i></span>' : icon(audio.status === 'muted' ? 'muted' : 'music', 18);
+  return `${visual}<span class="sound-label">${playing ? '音乐开' : audio.status === 'muted' ? '音乐关' : '开启音乐'}</span>`;
+}
+
+function musicButton(className = 'sound-button') {
+  return `<button type="button" class="icon-button ${className} ${audio.playing ? 'is-on' : ''}" data-audio-toggle data-audio-state="${audio.status}" aria-label="${audio.playing ? '关闭' : '开启'}背景音乐" aria-pressed="${audio.playing}">${musicButtonContent()}</button>`;
+}
+
+function syncMusicButtons() {
+  document.querySelectorAll('[data-audio-toggle]').forEach((button) => {
+    button.dataset.audioState = audio.status;
+    button.classList.toggle('is-on', audio.playing);
+    button.setAttribute('aria-label', `${audio.playing ? '关闭' : '开启'}背景音乐`);
+    button.setAttribute('aria-pressed', String(audio.playing));
+    button.title = audio.playing ? '猫猫音乐盒播放中，点击静音' : '点击播放猫猫音乐盒';
+    button.innerHTML = musicButtonContent();
+  });
+}
 
 function toast(message) {
   const element = document.querySelector('#toast');
@@ -87,7 +113,7 @@ function render() {
     <div class="site-shell">
       <header class="site-header">
         <a class="brand" href="./" aria-label="猫猫生日筹备委员会首页"><span class="brand-mark">${icon('paw', 29)}</span><span><strong>猫猫生日筹备委员会</strong><small>THE KITTY PARTY COMMITTEE</small></span></a>
-        <div class="header-tools"><span class="office-status"><i></i> ${state.celebrating ? '庆典营业中' : '今日特别营业'}</span><button class="icon-button sound-button ${musicEnabled ? 'is-on' : ''}" data-action="sound" aria-label="${musicEnabled ? '关闭' : '开启'}背景音乐" aria-pressed="${musicEnabled}" title="${musicEnabled ? '关闭' : '开启'}声音">${icon(musicEnabled ? 'sound' : 'muted', 20)}<span>${musicEnabled ? '声音开' : '声音关'}</span></button></div>
+        <div class="header-tools"><span class="office-status"><i></i> ${state.celebrating ? '庆典营业中' : '今日特别营业'}</span>${musicButton()}</div>
       </header>
 
       <main>
@@ -126,7 +152,7 @@ function render() {
               <p class="brief-description">我们本来都准备好了。<br>本来。</p>
               <div class="meeting-note"><span class="note-quote">“</span><p>主持人还在睡，<br>蛋糕被财务盯上了，<br>实习生买了一个巨型礼炮。</p><span class="note-signature">—— 努力镇定的委员长 · 芝麻</span></div>
               <button class="button button-primary brief-main" data-action="enter">推门，抓个现行 ${icon('arrow', 19)}</button>
-              <p class="brief-footnote">${icon('clock', 12)} 约 3–5 分钟 · 点点就能玩</p>
+              <p class="brief-footnote">${icon('music', 12)} 约 3–5 分钟 · ${audio.enabled ? '推门开启音乐' : '音乐已关闭'}</p>
             `}
           </aside>
         </section>
@@ -154,6 +180,7 @@ function celebrationBrief(name) {
 
 function enter() {
   if (state.entered) return;
+  audio.startIfEnabled();
   state.entered = true;
   saveState(); render();
   soundEffect('enter');
@@ -161,7 +188,7 @@ function enter() {
 }
 
 function openDialog(kind) {
-  if (['wake', 'cake', 'stage'].includes(kind)) { closeDialog(false); scene.open(kind); return; }
+  if (['wake', 'cake', 'stage'].includes(kind)) { audio.startIfEnabled(); closeDialog(false); scene.open(kind); return; }
   if (cardBusy && kind === 'card') return;
   closeDialog(false);
   activeDialog = kind;
@@ -213,6 +240,7 @@ function renderDialog() {
 
 function startCelebration() {
   if (completedCount() !== 3) return;
+  audio.startIfEnabled();
   closeDialog();
   state.celebrating = true; state.wished = false;
   saveState(); render();
@@ -221,6 +249,7 @@ function startCelebration() {
 
 function wish() {
   if (!state.celebrating || state.wished) return;
+  audio.startIfEnabled();
   scene.open('wish');
 }
 
@@ -238,58 +267,9 @@ function talkToCat(id) {
   toast(`${member.name}：${text}`); soundEffect('meow');
 }
 
-// Short synthesized tones keep the game self-contained and play only after sound is enabled.
-function ensureAudio() {
-  if (!audioContext) {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return false;
-    audioContext = new AudioContext();
-  }
-  if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
-  return true;
-}
+function soundEffect(kind) { audio.effect(kind); }
 
-function tone(frequency, duration = .18, delay = 0, volume = .035, type = 'sine') {
-  if (!musicEnabled || !ensureAudio()) return;
-  const oscillator = audioContext.createOscillator();
-  const gain = audioContext.createGain();
-  const time = audioContext.currentTime + delay;
-  oscillator.type = type;
-  oscillator.frequency.setValueAtTime(frequency, time);
-  gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(volume, time + .015);
-  gain.gain.exponentialRampToValueAtTime(.0001, time + duration);
-  oscillator.connect(gain); gain.connect(audioContext.destination);
-  oscillator.start(time); oscillator.stop(time + duration + .02);
-}
-
-function soundEffect(kind) {
-  if (!musicEnabled) return;
-  if (kind === 'success' || kind === 'enter') [523.25, 659.25, 783.99].forEach((note, i) => tone(note, .38, i * .1));
-  else if (kind === 'alarm') [880, 660, 880, 660].forEach((note, i) => tone(note, .1, i * .13));
-  else if (kind === 'meow') { tone(680, .18); tone(490, .26, .12); }
-  else tone(650, .09, 0, .025);
-}
-
-function birthdaySong() {
-  const notes = [[392, .5], [392, .25], [440, .75], [392, .75], [523.25, .75], [493.88, 1.2], [392, .5], [392, .25], [440, .75], [392, .75], [587.33, .75], [523.25, 1.2]];
-  let delay = 0;
-  for (const [note, length] of notes) { tone(note, length * .48, delay, .05, 'triangle'); delay += length * .48; }
-}
-
-function toggleSound() {
-  musicEnabled = !musicEnabled;
-  clearInterval(musicTimer);
-  if (musicEnabled) {
-    if (!ensureAudio()) { musicEnabled = false; toast('这个浏览器暂时不支持声音，猫猫会用字幕好好祝福。'); }
-    else {
-      audioContext.resume().catch(() => {});
-      const phrase = () => { if (document.hidden || state.celebrating) return; [261.63, 329.63, 392, 329.63, 293.66, 349.23, 440, 349.23].forEach((note, i) => tone(note, .7, i * .45, .015)); };
-      phrase(); musicTimer = setInterval(phrase, 4200); soundEffect('tap');
-    }
-  } else audioContext?.suspend().catch(() => {});
-  render();
-}
+function birthdaySong() { audio.birthdaySong(); }
 
 function showConfetti(kind = 'paper', duration = 5000) {
   cancelAnimationFrame(confettiFrame);
@@ -369,11 +349,12 @@ async function shareCard() {
 }
 
 document.addEventListener('click', (event) => {
+  if (event.target.closest('[data-audio-toggle]')) { audio.toggle(); return; }
   const button = event.target.closest('[data-action]');
   if (!button || button.disabled) return;
   const action = button.dataset.action;
+  if (state.entered) audio.startIfEnabled();
   if (action === 'enter') enter();
-  else if (action === 'sound') toggleSound();
   else if (action === 'nickname') openDialog('nickname');
   else if (action === 'close-dialog') closeDialog();
   else if (action === 'task') {
@@ -391,6 +372,7 @@ document.addEventListener('click', (event) => {
   else if (action === 'restart') openDialog('restart');
   else if (action === 'confirm-restart') {
     const name = state.name; state = freshState(); state.name = name;
+    audio.setMood('party');
     cancelAnimationFrame(confettiFrame);
     const canvas = document.querySelector('#confetti'); canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
     saveState(); closeDialog(); render(); window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -410,10 +392,4 @@ document.addEventListener('submit', (event) => {
 });
 
 document.addEventListener('input', (event) => { if (event.target.id === 'nickname') event.target.setCustomValidity(''); });
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) audioContext?.suspend().catch(() => {});
-  else if (musicEnabled) audioContext?.resume().catch(() => {});
-});
-window.addEventListener('pagehide', () => { clearInterval(musicTimer); });
-
 render();
