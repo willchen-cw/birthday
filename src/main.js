@@ -4,7 +4,7 @@ import { RoomScene } from './scene.js';
 
 const STORAGE_KEY = 'kitty-birthday-v1';
 const freshState = () => ({
-  name: '小寿星', entered: false,
+  name: '苏苏', entered: false,
   tasks: { wake: false, cake: false, stage: false },
   decorations: [], stolen: false,
   settings: { light: 'warm', banner: '今天你最大', confetti: 'paper' },
@@ -28,7 +28,8 @@ function loadState() {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (!saved || typeof saved !== 'object') return fallback;
     const valid = freshState();
-    valid.name = typeof saved.name === 'string' ? saved.name.trim().slice(0, 12) || fallback.name : fallback.name;
+    const savedName = typeof saved.name === 'string' ? saved.name.trim().slice(0, 12) : '';
+    valid.name = savedName && savedName !== '小寿星' ? savedName : fallback.name;
     valid.entered = saved.entered === true;
     valid.decorations = Array.isArray(saved.decorations) ? saved.decorations.filter((item) => {
       if (typeof item === 'string') return Object.hasOwn(decorationNames, item);
